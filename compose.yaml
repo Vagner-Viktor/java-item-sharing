@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16.3
+    container_name: item-sharing-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=sharing
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=12345
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  server:
+    build: server
+    image: item-sharing-server
+    container_name: item-sharing-server
+    ports:
+      - "9090:9090"
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/sharing
+      - SPRING_DATASOURCE_USERNAME=dbuser
+      - SPRING_DATASOURCE_PASSWORD=12345
+
+  gateway:
+    build: gateway
+    image: item-sharing-gateway
+    container_name: item-sharing-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - server
+    environment:
+      - ITEM-SHARING_SERVER_URL=http://server:9090
